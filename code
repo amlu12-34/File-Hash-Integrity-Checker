@@ -1,0 +1,92 @@
+import hashlib
+import os
+import tkinter as tk
+from tkinter import filedialog, ttk
+
+def calculate_sha256(file_path):
+    if not os.path.exists(file_path):
+        return None
+
+    hasher = hashlib.sha256()
+    
+    try:
+        with open(file_path, 'rb') as file:
+            while True:
+                chunk = file.read(65536)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+        
+        return hasher.hexdigest()
+    except IOError:
+        return None
+
+class HashCheckerApp:
+    def __init__(self, master):
+        self.master = master
+        master.title("File Integrity Checker")
+        master.resizable(False, False)
+
+        self.file_path = tk.StringVar()
+        self.hash_output = tk.StringVar()
+        self.hash_output.set("Select a file to calculate its SHA-256 hash.")
+
+        file_frame = ttk.Frame(master, padding="10")
+        file_frame.pack(fill='x')
+
+        ttk.Label(file_frame, text="File Path:").pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.path_entry = ttk.Entry(file_frame, textvariable=self.file_path, width=50)
+        self.path_entry.pack(side=tk.LEFT, fill='x', expand=True, padx=5, pady=5)
+
+        ttk.Button(file_frame, text="Browse", command=self.browse_file).pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        button_frame = ttk.Frame(master, padding="10")
+        button_frame.pack(fill='x')
+        
+        ttk.Button(button_frame, text="Calculate Hash", command=self.run_hashing, style='TButton').pack(pady=10)
+
+        result_frame = ttk.Frame(master, padding="10")
+        result_frame.pack(fill='both', expand=True)
+
+        ttk.Label(result_frame, text="SHA-256 Hash:").pack(anchor='w', pady=(5, 0))
+
+        self.hash_label = ttk.Label(result_frame, textvariable=self.hash_output, wraplength=450, font=('Courier', 10), background='#f0f0f0', borderwidth=1, relief="solid", anchor='w')
+        self.hash_label.pack(fill='x', padx=5, pady=5, ipady=10)
+
+        master.style = ttk.Style()
+        master.style.configure('TButton', font=('Arial', 10, 'bold'))
+
+    def browse_file(self):
+        filename = filedialog.askopenfilename(
+            title="Select a file for hashing"
+        )
+        if filename:
+            self.file_path.set(filename)
+            self.hash_output.set("Click 'Calculate Hash' to process...")
+
+    def run_hashing(self):
+        path = self.file_path.get()
+        
+        if not path:
+            self.hash_output.set("ERROR: Please select a file path first.")
+            return
+
+        if not os.path.exists(path):
+            self.hash_output.set(f"ERROR: File not found at path: {path}")
+            return
+
+        self.hash_output.set("Calculating hash... Please wait.")
+        self.master.update() 
+        
+        calculated_hash = calculate_sha256(path)
+        
+        if calculated_hash:
+            self.hash_output.set(calculated_hash)
+        else:
+            self.hash_output.set(f"ERROR: Could not read or process file: {path}")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HashCheckerApp(root)
+    root.mainloop()
